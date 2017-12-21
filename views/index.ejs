@@ -1,0 +1,14 @@
+<% include ./partials/header %>
+<% blogs.forEach(function(blog){%>
+<div class="ui main text container segment">
+    <h2><%=blog.title%> | <span><%=blog.created.toDateString()%></span></h2>
+    <img src="<%=blog.image%>" width ="200" height ="200"></img>
+    <div>
+        <p><%=blog.body.substring(0,250)%></p>
+        <a href="/blogs/<%=blog._id%>">Read More</a>
+    </div>
+</div>
+
+<% });%>
+
+<% include ./partials/footer %>
