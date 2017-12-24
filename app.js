@@ -1,20 +1,26 @@
-const     express      = require('express'),
-          app          = express(),
-          port         = process.env.PORT,
-          ip           = process.env.IP,
-          bodyParser   = require('body-parser'),
-          mongoose     = require('mongoose'),
-          Schema       = mongoose.Schema;
+const express      = require('express'),
+app                = express(),
+port               = process.env.PORT,
+ip                 = process.env.IP,
+bodyParser         = require('body-parser'),
+methodOverride     = require('method-override'),
+mongoose           = require('mongoose'),
+Schema             = mongoose.Schema;
           
-//set view engine template        
-app.set("view engine", 'ejs');
 
 //use the native promises librabry
 mongoose.Promises = global.Promises;
 
+
+/****************************************
+ * DB CONNECT & APP CONFIGURATIONS
+ * ***************************************/
 //connect to MongoDB
 var db = "mongodb://localhost/blogapp_db";
 mongoose.connect(db, {useMongoClient : true});
+ 
+//set view engine template        
+app.set("view engine", 'ejs');
 
 //To serve static files use this middleware function in Express.
 app.use(express.static("public"));
@@ -22,6 +28,12 @@ app.use(express.static("public"));
 //set up the environment to make use of bodyparser
 app.use(bodyParser.urlencoded({extended:true}));
 
+//set what methodoverride should look for in URL
+app.use(methodOverride("_METHOD"));
+
+/****************************************
+ * MONGOOSE SCHEMA / MODEL CONFIGURATIONS
+ * ***************************************/
 //Define a Schema
 var blogSchema = Schema({
     title:String,
@@ -29,6 +41,8 @@ var blogSchema = Schema({
     body:String,
     created:{type:Date,default:Date.now}
 })
+
+
 
 //Map schema to model
 var Blog = mongoose.model("Blog",blogSchema);
@@ -63,16 +77,13 @@ app.get("/blogs", function(req, res){
 
 
 //NEW ROUTE
-app.get('/blogs/new',function(req, res){
+app.get('/blogs/new',(req, res)=>{
     res.render("new");
 });
 
 
 //CREATE ROUTE
 app.post('/blogs',function(req ,res){
-    var title = req.body[title];
-    var image = req.body[image];
-    var body = req.body[body];
     var newpost = req.body.blog;
     
     Blog.create(newpost,function(err,newcontent){
@@ -80,7 +91,6 @@ app.post('/blogs',function(req ,res){
             res.render("new");
         } else{
             res.redirect('/blogs');
-            console.log(newcontent);
         }
     })
 })
@@ -92,14 +102,38 @@ app.get('/blogs/:id',function(req,res){
    Blog.findById(id,function(err,blogdata){
        if(err){
            console.log(err);
-           console.log("blog not found");
        } else {
            res.render("show",{blogdata:blogdata})
        }
    });
 })
 
+//EDIT ROUTE
 
-app.listen(port,ip,function(){
-    console.log("the server is STARTED!");
+app.get('/blogs/:id/edit',(req,res) =>{
+   var id = req.params.id;
+   Blog.findById(id,(err,foundblog)=>{
+       if(err){
+           res.redirect('/blogs');
+       } else {
+           res.render("edit",{blogdata:foundblog});
+       }
+   });
+});
+
+//UPDATE ROUTE
+app.put('/blogs/:id',(req,res) => {
+    var id = req.params.id;
+    var updatedcontent = req.body.blog;
+    Blog.findByIdAndUpdate(id,updatedcontent,(err,updatedblog)=>{
+        if(err){
+            res.redirect('/');
+        } else {
+            res.redirect('/blogs/'+id);
+        }
+    });
+});
+
+app.listen(port,ip,() => {
+    console.log(`The Server is started on port ${port}`);
 })
